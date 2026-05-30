@@ -406,10 +406,10 @@ elif menu == "Add Investor":
         payout_type = st.selectbox(
             "Payout Type",
             [
-                "Monthly",
-                "Quarterly",
-                "Half-Yearly",
-                "Yearly"
+                "Monthly:(1)",
+                "Quarterly:(3)",
+                "Half-Yearly:(6)",
+                "Yearly:(11)"
             ]
         )
 
