@@ -364,7 +364,8 @@ elif menu == "Add Investor":
         )
 
         mobile = st.text_input(
-            "Mobile Number"
+            "Mobile Number",
+            value="+91"
         )
 
         investment_date = st.date_input(
