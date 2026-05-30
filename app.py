@@ -14,6 +14,16 @@ st.set_page_config(
 
 EXCEL_FILE = "investors.xlsx"
 
+LOG_FILE = "activity_log.xlsx"
+
+USERS = {
+    "admin": "admin123",
+    "nikhil": "nikhil123",
+    "harshala": "harshala123",
+    "mandar": "manar123",
+    "janvi": "janvi123",
+    "employee1": "emp123"
+}
 
 MAX_DURATION = 60
 
@@ -35,7 +45,20 @@ def create_excel():
             "PROFIT AMT",
             "PROFIT PERCENTAGE",
             "CAPITAL RETURN",
-            "CAPITAL_PAID"
+            "CAPITAL_PAID",
+            "REFERRAL NAME",
+            "REFERRAL AMOUNT",
+            "REFERRAL_PAID",
+            "PAYOUT TYPE",
+            "NUMBER OF PAYOUTS",
+            "BANK NAME",
+            "ACCOUNT HOLDER NAME",
+            "ACCOUNT NUMBER",
+            "IFSC CODE",
+            "BRANCH NAME",
+            "PAN NUMBER",
+            "AADHAAR NUMBER"
+
         ]
 
         for i in range(1, MAX_DURATION + 1):
@@ -50,6 +73,29 @@ def create_excel():
         )
 
 create_excel()
+
+
+def create_log_file():
+
+    if not os.path.exists(LOG_FILE):
+
+        log_columns = [
+            "TIMESTAMP",
+            "EMPLOYEE",
+            "CLIENT NAME",
+            "ACTION",
+            "DETAILS"
+        ]
+
+        pd.DataFrame(
+            columns=log_columns
+        ).to_excel(
+            LOG_FILE,
+            index=False
+        )
+
+create_log_file()
+
 
 # =====================================
 # LOAD DATA
@@ -67,7 +113,52 @@ def save_data(df):
 
     st.success("Data Saved")
 
+
+def save_log(
+    employee,
+    client,
+    action,
+    details
+):
+
+    log_df = pd.read_excel(
+        LOG_FILE
+    )
+
+    new_log = {
+        "TIMESTAMP":
+        datetime.now().strftime(
+            "%d-%m-%Y %H:%M:%S"
+        ),
+
+        "EMPLOYEE": employee,
+        "CLIENT NAME": client,
+        "ACTION": action,
+        "DETAILS": details
+    }
+
+    log_df = pd.concat(
+        [
+            log_df,
+            pd.DataFrame([new_log])
+        ],
+        ignore_index=True
+    )
+
+    log_df.to_excel(
+        LOG_FILE,
+        index=False
+    )
+
 df = load_data()
+
+if "CLIENT CONTACT NO." in df.columns:
+
+    df["CLIENT CONTACT NO."] = (
+        df["CLIENT CONTACT NO."]
+        .fillna("")
+        .astype(str)
+    )
 
 # Fix data types for payment columns
 for i in range(1, MAX_DURATION + 1):
@@ -118,7 +209,61 @@ for i in range(1, MAX_DURATION + 1):
 # TITLE
 # =====================================
 
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if "username" not in st.session_state:
+    st.session_state.username = ""
+
+if not st.session_state.logged_in:
+
+    st.title("🔐 Employee Login")
+
+    username = st.text_input(
+        "Username"
+    )
+
+    password = st.text_input(
+        "Password",
+        type="password"
+    )
+
+    if st.button("Login"):
+
+        if (
+            username in USERS
+            and USERS[username] == password
+        ):
+
+            st.session_state.logged_in = True
+            st.session_state.username = username
+
+            st.success(
+                "Login Successful"
+            )
+
+            st.rerun()
+
+        else:
+
+            st.error(
+                "Invalid Username or Password"
+            )
+
+    st.stop()
+
 st.title("💰 KalaMudra")
+
+st.sidebar.success(
+    f"Logged in as: {st.session_state.username}"
+)
+
+if st.sidebar.button("Logout"):
+
+    st.session_state.logged_in = False
+    st.session_state.username = ""
+
+    st.rerun()
 
 # =====================================
 # MENU
@@ -156,9 +301,9 @@ if menu == "Dashboard":
     for _, row in df.iterrows():
 
         duration = int(
-            row["PLAN DURATION"]
+            row["NUMBER OF PAYOUTS"]
         ) if pd.notna(
-            row["PLAN DURATION"]
+            row["NUMBER OF PAYOUTS"]
         ) else 0
 
         for i in range(1, duration + 1):
@@ -235,6 +380,27 @@ elif menu == "Add Investor":
             "Plan"
         )
 
+        Bank_name = st.text_input(
+            "Bank Name"
+        )
+
+        ACCOUNT_holder_name = st.text_input(
+            "Account Holder Name"
+        )
+        
+        ACCOUNT_holder_number = st.text_input(
+            "Account Holder Number"
+        )
+
+        IFSC_Code = st.text_input(
+            "IFSC Code"
+        )
+
+        Branch_Name = st.text_input(
+            "Branch Name"
+        )
+
+
     with col2:
 
         payout_type = st.selectbox(
@@ -288,9 +454,25 @@ elif menu == "Add Investor":
             "Capital Return Date"
         )
 
+
+        Pan_Number = st.text_input(
+            "PAN NUMBER"
+        )
+        
+        Adhar_Number = st.text_input(
+            "AADHAAR NUMBER"
+        )
+
         Referral_name = st.text_input(
             "Referral Name"
         )
+
+        referral_amount = st.number_input(
+            "Referral Amount",
+            min_value=0.0,
+            value=0.0
+        )
+
 
 
     monthly_profit = 0
@@ -349,6 +531,7 @@ elif menu == "Add Investor":
 
         row["CLIENT NAME"] = client_name
         row["REFERRAL NAME"] = Referral_name
+        row["REFERRAL AMOUNT"] = referral_amount
         row["CLIENT CONTACT NO."] = mobile
         row["DATE OF INVESTMENT"] = investment_date
         row["INVESTED AMOUNT"] = amount
@@ -360,6 +543,16 @@ elif menu == "Add Investor":
         row["PROFIT PERCENTAGE"] = profit_percentage
         row["CAPITAL RETURN"] = capital_return
         row["CAPITAL_PAID"] = False
+        row["REFERRAL_PAID"] = False
+        row["BANK NAME"] = Bank_name
+        row["ACCOUNT HOLDER NAME"] = ACCOUNT_holder_name
+        row["ACCOUNT NUMBER"] = ACCOUNT_holder_number
+        row["IFSC CODE"] = IFSC_Code
+        row["BRANCH NAME"] = Branch_Name
+
+        row["PAN NUMBER"] = Pan_Number
+        row["AADHAAR NUMBER"] = Adhar_Number
+        
 
         for i in range(cycles):
 
@@ -384,6 +577,14 @@ elif menu == "Add Investor":
         )
 
         save_data(df)
+
+
+        save_log(
+            st.session_state.username,
+            client_name,
+            "NEW INVESTOR",
+            "Investor added successfully"
+        )
 
         st.success(
             "Investor Added Successfully"
@@ -423,10 +624,121 @@ elif menu == "Investors":
             )
         ]
 
+
     st.dataframe(
-        latest_df,
+        latest_df[
+            [
+                "CLIENT NAME",
+                "CLIENT CONTACT NO.",
+                "BANK NAME",
+                "ACCOUNT HOLDER NAME",
+                "ACCOUNT NUMBER",
+                "IFSC CODE",
+                "BRANCH NAME",
+                "PAN NUMBER",
+                "AADHAAR NUMBER",
+                "REFERRAL NAME",
+                "REFERRAL AMOUNT",
+                "PAYOUT TYPE",
+                "NUMBER OF PAYOUTS"
+            ]
+        ],  
         use_container_width=True
     )
+        
+    st.divider()
+
+    st.subheader("Edit Investor")
+
+    selected_client = st.selectbox(
+        "Select Investor",
+        latest_df["CLIENT NAME"].tolist(),
+        key="edit_client"
+    )
+
+    edit_idx = df[
+        df["CLIENT NAME"] == selected_client
+    ].index[0]
+
+    new_name = st.text_input(
+        "Client Name",
+        value=str(df.at[edit_idx, "CLIENT NAME"])
+    )
+
+    new_mobile = st.text_input(
+        "Mobile Number",
+        value=""
+        if pd.isna(
+            df.at[
+                edit_idx,
+                "CLIENT CONTACT NO."
+            ]
+        )
+        else str(
+            df.at[
+                edit_idx,
+                "CLIENT CONTACT NO."
+            ]
+        )
+    )
+
+    new_referral = st.text_input(
+        "Referral Name",
+        value=str(df.at[edit_idx, "REFERRAL NAME"])
+    )
+
+    new_referral_amt = st.number_input(
+        "Referral Amount",
+        value=float(
+            pd.to_numeric(
+                df.at[edit_idx, "REFERRAL AMOUNT"],
+                errors="coerce"
+            ) or 0
+        )
+    )
+
+    if st.button(
+        "Update Investor",
+        type="primary"
+    ):
+
+        df.at[
+            edit_idx,
+            "CLIENT NAME"
+        ] = new_name
+
+        df.at[
+            edit_idx,
+            "CLIENT CONTACT NO."
+        ] = new_mobile
+
+        df.at[
+            edit_idx,
+            "REFERRAL NAME"
+        ] = new_referral
+
+        df.at[
+            edit_idx,
+            "REFERRAL AMOUNT"
+        ] = new_referral_amt
+
+        save_data(df)
+
+        save_log(
+            st.session_state.username,
+            selected_client,
+            "EDIT INVESTOR",
+            "Investor details updated"
+        )
+
+        st.success(
+            "Investor Updated Successfully"
+        )
+
+        st.rerun()
+
+
+
 
 # =====================================
 # PAYMENT TRACKER
@@ -451,7 +763,7 @@ elif menu == "Payment Tracker":
         ].index[0]
 
         duration = int(
-            df.at[idx, "PLAN DURATION"]
+            df.at[idx, "NUMBER OF PAYOUTS"]
         )
 
         total_profit = float(
@@ -465,6 +777,33 @@ elif menu == "Payment Tracker":
 
         st.subheader(
             f"Investor : {client}"
+        )
+
+
+        ref_name = df.at[idx, "REFERRAL NAME"]
+
+        if pd.isna(ref_name) or str(ref_name).strip() == "":
+            ref_name = "No Referral"
+
+        ref_amount = pd.to_numeric(
+            df.at[idx, "REFERRAL AMOUNT"],
+            errors="coerce"
+        )
+
+        if pd.isna(ref_amount):
+            ref_amount = 0
+
+        st.info(
+            f"Referral: {ref_name} | "
+            f"Amount: ₹{ref_amount:,.2f}"
+        )
+        
+
+        referral_paid = st.checkbox(
+            "Referral Commission Paid",
+            value=bool(
+                df.at[idx, "REFERRAL_PAID"]
+            ) if "REFERRAL_PAID" in df.columns else False
         )
 
         c1, c2, c3 = st.columns(3)
@@ -575,7 +914,7 @@ elif menu == "Payment Tracker":
                 paid_col = f"PAID_{i}"
                 payment_col = f"PAYMENT_DATE_{i}"
 
-                df.loc[
+                df.at[
                     idx,
                     paid_col
                 ] = bool(
@@ -596,7 +935,7 @@ elif menu == "Payment Tracker":
                         or existing_date == "nan"
                     ):
 
-                        df.loc[
+                        df.at[
                             idx,
                             payment_col
                         ] = datetime.now().strftime(
@@ -605,17 +944,29 @@ elif menu == "Payment Tracker":
 
                 else:
 
-                    df.loc[
+                    df.at[
                         idx,
                         payment_col
                     ] = ""
 
-            df.loc[
+            df.at[
                 idx,
                 "CAPITAL_PAID"
             ] = capital_paid
 
+            df.at[
+                idx,
+                "REFERRAL_PAID"
+            ] = referral_paid
+
             save_data(df)
+
+            save_log(
+                st.session_state.username,
+                client,
+                "PAYMENT UPDATE",
+                "Payment status updated"
+            )
 
             st.success(
                 "Payment Status Updated Successfully"
@@ -637,9 +988,9 @@ elif menu == "Reports":
     for _, row in df.iterrows():
 
         duration = int(
-            row["PLAN DURATION"]
+            row["NUMBER OF PAYOUTS"]
         ) if pd.notna(
-            row["PLAN DURATION"]
+            row["NUMBER OF PAYOUTS"]
         ) else 0
 
         for i in range(
@@ -701,6 +1052,8 @@ elif menu == "Reports":
         report_df,
         use_container_width=True
     )
+
+
 
     csv = report_df.to_csv(
         index=False
