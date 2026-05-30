@@ -408,10 +408,8 @@ elif menu == "Add Investor":
             [
                 "Monthly (1 Month)",
                 "Quarterly (3 Months)",
-                "4-Monthly (4 Months)",
                 "Half-Yearly (6 Months)",
-                "Yearly (12 Months)",
-                "2 Years (24 Months)"
+                "Yearly (12 Months)"
             ]
         )
 
@@ -421,19 +419,19 @@ elif menu == "Add Investor":
             value=1
         )
 
-        if payout_type == "Monthly":
+        if payout_type == "Monthly (1 Month)":
 
             months_gap = 1
 
-        elif payout_type == "Quarterly":
+        elif payout_type == "Quarterly (3 Months)":
 
             months_gap = 3
 
-        elif payout_type == "Half-Yearly":
+        elif payout_type == "Half-Yearly (6 Months)":
 
             months_gap = 6
 
-        elif payout_type == "Yearly":
+        elif payout_type == "Yearly (12 Months)":
 
             months_gap = 12
 
