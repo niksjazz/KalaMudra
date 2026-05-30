@@ -13,6 +13,8 @@ st.set_page_config(
 )
 
 EXCEL_FILE = "investors.xlsx"
+
+
 MAX_DURATION = 60
 
 # =====================================
@@ -31,6 +33,7 @@ def create_excel():
             "PLAN",
             "PLAN DURATION",
             "PROFIT AMT",
+            "PROFIT PERCENTAGE",
             "CAPITAL RETURN",
             "CAPITAL_PAID"
         ]
@@ -234,32 +237,76 @@ elif menu == "Add Investor":
 
     with col2:
 
-        duration = st.number_input(
-            "Plan Duration (Months)",
+        payout_type = st.selectbox(
+            "Payout Type",
+            [
+                "Monthly",
+                "Quarterly",
+                "Half-Yearly",
+                "Yearly"
+            ]
+        )
+
+        cycles = st.number_input(
+            "Number of Payouts",
             min_value=1,
-            max_value=60,
             value=1
         )
 
-        profit_amt = st.number_input(
-            "Total Profit Amount",
-            min_value=0.0
+        if payout_type == "Monthly":
+
+            months_gap = 1
+
+        elif payout_type == "Quarterly":
+
+            months_gap = 3
+
+        elif payout_type == "Half-Yearly":
+
+            months_gap = 6
+
+        elif payout_type == "Yearly":
+
+            months_gap = 12
+
+
+        profit_percentage = st.number_input(
+            "Profit Percentage (%)",
+            min_value=0.0,
+            step=0.1
+        )
+
+        profit_amt = (
+            amount * profit_percentage / 100
+        )
+
+        st.info(
+            f"Total Profit Amount : ₹{profit_amt:,.2f}"
         )
 
         capital_return = st.date_input(
             "Capital Return Date"
         )
 
+        Referral_name = st.text_input(
+            "Referral Name"
+        )
+
+
     monthly_profit = 0
 
-    if duration > 0:
+    if cycles > 0:
+
         monthly_profit = (
-            profit_amt / duration
+            profit_amt / cycles
         )
 
     st.success(
-        f"Monthly Profit Payout: ₹{monthly_profit:,.2f}"
+        f"Profit Payout: ₹{monthly_profit:,.2f}"
     )
+
+
+    from dateutil.relativedelta import relativedelta
 
     st.subheader(
         "Profit Payout Schedule"
@@ -267,15 +314,28 @@ elif menu == "Add Investor":
 
     payout_dates = []
 
-    for i in range(duration):
+    for i in range(cycles):
+
+        default_date = (
+            investment_date +
+            relativedelta(
+                months=(i+1)*months_gap
+            )
+        )
 
         payout_date = st.date_input(
             f"Profit Date {i+1}",
+            value=default_date.date()
+            if hasattr(default_date, "date")
+            else default_date,
             key=f"profit_{i}"
         )
-
         payout_dates.append(
             payout_date
+        )
+        st.info(
+            f"Profit Date {i+1} : "
+            f"{payout_date.strftime('%d-%m-%Y')}"
         )
 
     if st.button(
@@ -288,16 +348,20 @@ elif menu == "Add Investor":
             row[col] = ""
 
         row["CLIENT NAME"] = client_name
+        row["REFERRAL NAME"] = Referral_name
         row["CLIENT CONTACT NO."] = mobile
         row["DATE OF INVESTMENT"] = investment_date
         row["INVESTED AMOUNT"] = amount
         row["PLAN"] = plan
-        row["PLAN DURATION"] = duration
+        row["PAYOUT TYPE"] = payout_type
+        row["NUMBER OF PAYOUTS"] = cycles
+        # row["PLAN DURATION"] = duration
         row["PROFIT AMT"] = profit_amt
+        row["PROFIT PERCENTAGE"] = profit_percentage
         row["CAPITAL RETURN"] = capital_return
         row["CAPITAL_PAID"] = False
 
-        for i in range(duration):
+        for i in range(cycles):
 
             row[
                 f"PROFIT DATE {i+1}"
